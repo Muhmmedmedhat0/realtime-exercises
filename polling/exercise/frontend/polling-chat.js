@@ -38,12 +38,18 @@ async function getNewMsgs() {
   try {
     const res = await fetch("/poll");
     json = await res.json();
+    if (res.status >= 400) {
+      throw new Error("requset did not succed:", res.status);
+    }
+    allChat = json.msg;
+    render();
+
+    faildTraies = 0;
   } catch (error) {
     //
     console.error("polling error", error);
+    faildTraies++;
   }
-  allChat = json.msg;
-  render();
 }
 
 function render() {
@@ -61,10 +67,12 @@ const template = (user, msg) =>
 
 // add requset animation frame
 let timeToMakeNextReq = 0;
+const BACKOFF = 5000;
+let faildTraies = 0;
 async function reqAnimFrame(time) {
   if (timeToMakeNextReq <= time) {
     await getNewMsgs();
-    timeToMakeNextReq = time + INTERVAL;
+    timeToMakeNextReq = time + INTERVAL + faildTraies * BACKOFF;
   }
   requestAnimationFrame(reqAnimFrame);
 }
